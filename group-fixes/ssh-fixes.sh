@@ -1,3 +1,5 @@
+# configures ssh to be more secure
+
 # config, 1 = yes (to the security fixes) / 0 = no (keep it the way it was)
 SSH_LOG_LEVEL_VERBOSE=1
 
@@ -113,6 +115,19 @@ print_settings() {
     echo "SSH_MAX_SESSIONS: $SSH_MAX_SESSIONS"
 }
 
+check_fix() {
+    if [ -n $1 ]; then
+        echo "stopping checks, as check string was not provided"
+        return 1
+    fi
+
+    if sshd -T | grep -qE "$1" /etc/ssh/sshd_config; then
+        echo "$1 successfully applied\n"
+    else
+        echo "$1 application unsuccessful\n"
+    fi
+}
+
 check_ssh_install
 ssh_installed=$?
 check_sshd_conf
@@ -125,71 +140,86 @@ fi
 
 echo "checks are successful, proceeding with patching\n"
 print_settings
+echo
 
 # set log level
 if [ "$SSH_LOG_LEVEL_VERBOSE" -eq 1 ]; then
     sed -i -E "s/^[#]*[[:space:]]*loglevel.*$/LogLevel VERBOSE/I" /etc/ssh/sshd_config
+    check_fix "LogLevel VERBOSE"
 fi
 
 # disable x11 forward
 if [ "$SSH_DISABLE_X11_FORWARD" -eq 1 ]; then
     sed -i -E "s/^[#]*[[:space:]]*x11forwarding.*$/X11Forwarding no/I" /etc/ssh/sshd_config
+    check_fix "X11Forwarding no"
 fi
 
 # set max auth tries
 if [ "$SSH_MAX_AUTH_TRIES" -gt 0 ] && [ "$SSH_MAX_AUTH_TRIES" -le 3 ]; then
     sed -i -E "s/^[#]*[[:space:]]*maxauthtries.*$/MaxAuthTries $SSH_MAX_AUTH_TRIES/I" /etc/ssh/sshd_config
+    check_fix "MaxAuthTries $SSH_MAX_AUTH_TRIES"
 fi
 
 # set ignore rhosts to true
 if [ "$SSH_IGNORE_RHOSTS" -eq 1 ]; then
     sed -i -E "s/^[#]*[[:space:]]*ignorerhosts.*$/IgnoreRhosts yes/I" /etc/ssh/sshd_config
+    check_fix "IgnoreRhosts yes"
 fi
 
 # disable host based auth
 if [ "$SSH_DISABLE_HOST_BASED_AUTH" -eq 1 ]; then
     sed -i -E "s/^[#]*[[:space:]]*hostbasedauthentication.*$/HostbasedAuthentication no/I" /etc/ssh/sshd_config
+    check_fix "HostbasedAuthentication no"
 fi
 
 # disable root login
 if [ "$SSH_DISABLE_ROOT_LOGIN" -eq 1 ]; then
     sed -i -E "s/^[#]*[[:space:]]*permitrootlogin.*$/PermitRootLogin no/I" /etc/ssh/sshd_config
+    check_fix "PermitRootLogin no"
 fi
 
 # disable empty psswd
 if [ "$SSH_DISABLE_EMPTY_PSSWD" -eq 1 ]; then
     sed -i -E "s/^[#]*[[:space:]]*permitemptypasswords.*$/PermitEmptyPasswords no/I" /etc/ssh/sshd_config
+    check_fix "PermitEmptyPasswords no"
 fi
 
 # disable usr env
 if [ "$SSH_DISABLE_USER_ENV" -eq 1 ]; then
     sed -i -E "s/^[#]*[[:space:]]*permituserenvironment.*$/PermitUserEnvironment no/I" /etc/ssh/sshd_config
+    check_fix "PermitUserEnvironment no"
 fi
 
 # set ssh to only use provided ciphers
 if [ "$SSH_SET_STRONG_CIPHERS" -eq 1 ] && [ -n "$SSH_STRONG_CIPHER_LIST" ]; then
     sed -i -E "s/^[#]*[[:space:]]*ciphers.*$/Ciphers $SSH_STRONG_CIPHER_LIST/I" /etc/ssh/sshd_config
+    check_fix "Ciphers $SSH_STRONG_CIPHER_LIST"
 fi
 
 # set ssh to only use provided mac algs
 if [ "$SSH_SET_STRONG_MAC_ALG" -eq 1 ] && [ -n "$SSH_STRONG_MAC_ALGS" ]; then
     sed -i -E "s/^[#]*[[:space:]]*macs.*$/MACs $SSH_STRONG_MAC_ALGS/I" /etc/ssh/sshd_config
+    check_fix "MACs $SSH_STRONG_MAC_ALGS"
 fi
 
 # set ssh to only use provided key exchange algs
 if [ "$SSH_STRONG_KEY_EX" -eq 1 ] && [ -n "$SSH_STRONG_KEY_EX_ALGS" ]; then
-    sed -i -E "s/^[#]*[[:space:]]*keyalgorithms.*$/KexAlgorithms $SSH_STRONG_KEY_EX_ALGS/I" /etc/ssh/sshd_config
+    sed -i -E "s/^[#]*[[:space:]]*kexalgorithms.*$/KexAlgorithms $SSH_STRONG_KEY_EX_ALGS/I" /etc/ssh/sshd_config
+    check_fix "KexAlgorithms $SSH_STRONG_KEY_EX_ALGS"
 fi
 
 # set timeout (must be less than 300s)
 if [ "$SSH_SET_IDLE_TIMEOUT" -eq 1 ] && [ "$SSH_KICK_TIME" -le 300 ] && [ "$SSH_KICK_TIME" -gt 0 ]; then
     sed -i -E "s/^[#]*[[:space:]]*clientaliveinterval.*$/ClientAliveInterval $SSH_KICK_TIME/I" /etc/ssh/sshd_config
     sed -i -E "s/^[#]*[[:space:]]*clientalivecountmax.*$/ClientAliveCountMax $SSH_SEND_ALIVE_CHECK/I" /etc/ssh/sshd_config
+    check_fix "ClientAliveInterval $SSH_KICK_TIME"
+    check_fix "ClientAliveCountMax $SSH_SEND_ALIVE_CHECK"
 fi
 
 # set login grace time
 if [ "$SSH_SET_LOGIN_GRACE" -eq 1 ] && [ "$SSH_LOGIN_GRACE_TIME" -gt 0 ]; then
     sed -i -E "s/^[#]*[[:space:]]*logingracetime.*$/LoginGraceTime $SSH_LOGIN_GRACE_TIME/I" /etc/ssh/sshd_config
+    check_fix "LoginGraceTime $SSH_LOGIN_GRACE_TIME"
 fi
 
 # limit ssh access
@@ -198,29 +228,38 @@ if [ "$SSH_LIMIT_ACCESS" -eq 1 ] && { [ -n "$SSH_ALLOW_USERS" ] || [ -n "$SSH_AL
     sed -i -E "s/^[#]*[[:space:]]*allowgroups.*$/AllowGroups $SSH_ALLOW_GROUPS/I" /etc/ssh/sshd_config
     sed -i -E "s/^[#]*[[:space:]]*denyusers.*$/DenyUsers $SSH_DENY_USERS/I" /etc/ssh/sshd_config    
     sed -i -E "s/^[#]*[[:space:]]*denygroups.*$/DenyGroups $SSH_DENY_GROUPS/I" /etc/ssh/sshd_config
+    check_fix "AllowUsers $SSH_ALLOW_USERS"
+    check_fix "AllowGroups $SSH_ALLOW_GROUPS"
+    check_fix "DenyUsers $SSH_DENY_USERS"
+    check_fix "DenyGroups $SSH_DENY_GROUPS"
 fi
 
 # set banner
 if [ "$SSH_SET_BANNER" -eq 1 ]; then
     sed -i -E "s|^[#]*[[:space:]]*banner.*$|Banner /etc/issue.net|I" /etc/ssh/sshd_config
+    check_fix "Banner /etc/issue.net"
 fi
 
 # enable pam
 if [ "$SSH_ENABLE_PAM" -eq 1 ]; then
     sed -i -E "s/^[#]*[[:space:]]*usepam.*$/UsePAM yes/I" /etc/ssh/sshd_config
+    check_fix "UsePAM yes"
 fi
 
 # disable tcp forward
 if [ "$SSH_DISABLE_TCP_FORWARD" -eq 1 ]; then
     sed -i -E "s/^[#]*[[:space:]]*allowtcpforwarding.*$/AllowTcpForwarding no/I" /etc/ssh/sshd_config
+    check_fix "AllowTcpForwarding no"
 fi
 
 # set max startups
 if [ "$SSH_SET_MAX_STARTUPS" -eq 1 ] && [ -n "$SSH_MAX_STARTUP_VALUE" ]; then
     sed -i -E "s/^[#]*[[:space:]]*maxstartups.*$/MaxStartups $SSH_MAX_STARTUP_VALUE/I" /etc/ssh/sshd_config
+    check_fix "MaxStartups $SSH_MAX_STARTUP_VALUE"
 fi
 
 # set max sessions
 if [ "$SSH_MAX_SESSIONS" -gt 0 ] && [ "$SSH_MAX_SESSIONS" -le 4 ]; then
     sed -i -E "s/^[#]*[[:space:]]*maxsessions.*$/MaxSessions $SSH_MAX_SESSIONS/I" /etc/ssh/sshd_config
+    check_fix "MaxSessions $SSH_MAX_SESSIONS"
 fi

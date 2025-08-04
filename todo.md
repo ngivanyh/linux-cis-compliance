@@ -1,0 +1,2 @@
+- [ ] `ssh-fixes.sh`, check settings to be correct
+- [ ] `ssh-fixes.sh`, check if fixes have applied

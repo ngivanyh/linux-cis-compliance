@@ -115,16 +115,37 @@ print_settings() {
     echo "SSH_MAX_SESSIONS: $SSH_MAX_SESSIONS"
 }
 
-check_fix() {
-    if [ -n $1 ]; then
-        echo "stopping checks, as check string was not provided"
+apply() {
+    local setting="$1" # setting name
+    local config_option="$3" # setting value
+    local full_setting="$setting $config_option"
+
+    # remove all comments related to setting
+    sed -i -E "s/^#+[[:space:]]*$setting.*$//I" /etc/ssh/sshd_config
+
+    # check if setting already exists
+    if cat /etc/ssh/sshd_config | grep -qE "$full_setting"; then
+        echo "\"$full_setting\" fix already applied, unchanged\n"
         return 1
     fi
 
-    if sshd -T | grep -qE "$1" /etc/ssh/sshd_config; then
-        echo "$1 successfully applied\n"
+    echo "applying $full_setting"
+    # add setting
+    if cat /etc/ssh/sshd_config | grep -qEi "^#+[[:space:]]*$setting.*$"; then
+        echo "overwriting previous setting"
+        sed -i -E "s/^#+[[:space:]]*$setting.*$/$full_setting/I" /etc/ssh/sshd_config
     else
-        echo "$1 application unsuccessful\n"
+        echo "adding new setting"
+        echo "$full_setting" >> /etc/ssh/sshd_config
+    fi
+
+    # check if applied
+    if sshd -T | grep -qE "$full_setting"; then
+        echo "$full_setting successfully applied\n"
+        return 0
+    else
+        echo "$full_setting application unsuccessful\n"
+        return 2
     fi
 }
 
@@ -142,10 +163,12 @@ echo "checks are successful, proceeding with patching\n"
 print_settings
 echo
 
+cp /etc/ssh/sshd_config .
+mv ./sshd_config ./sshd_config.bak
+
 # set log level
 if [ "$SSH_LOG_LEVEL_VERBOSE" -eq 1 ]; then
-    sed -i -E "s/^[#]*[[:space:]]*loglevel.*$/LogLevel VERBOSE/I" /etc/ssh/sshd_config
-    check_fix "LogLevel VERBOSE"
+    apply "LogLevel" "VERBOSE"
 fi
 
 # disable x11 forward
@@ -263,3 +286,5 @@ if [ "$SSH_MAX_SESSIONS" -gt 0 ] && [ "$SSH_MAX_SESSIONS" -le 4 ]; then
     sed -i -E "s/^[#]*[[:space:]]*maxsessions.*$/MaxSessions $SSH_MAX_SESSIONS/I" /etc/ssh/sshd_config
     check_fix "MaxSessions $SSH_MAX_SESSIONS"
 fi
+
+systemctl restart ssh

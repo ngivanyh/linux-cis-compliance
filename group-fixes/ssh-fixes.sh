@@ -54,7 +54,8 @@ SSH_MAX_STARTUP_VALUE="10:30:60"
 SSH_MAX_SESSIONS=4 # 0 if don't want to enable
 
 if [ "$EUID" -ne 0 ]; then
-    echo "running this script with root is recommended\n"
+    echo "run this script with root"
+    exit 1
 fi
 
 check_ssh_install() {
@@ -161,7 +162,7 @@ sshd_conf_exists=$?
 
 if [ "$ssh_installed" -ne 0 ] || [ "$sshd_conf_exists" -ne 0 ]; then    
     echo "checks unsuccessful"
-    exit 1
+    exit 2
 fi
 
 echo "checks are successful, proceeding with patching\n"
@@ -170,6 +171,9 @@ echo
 
 cp /etc/ssh/sshd_config .
 mv ./sshd_config ./sshd_config.bak
+echo -n "copied original sshd_config file to "
+pwd
+echo "under the name of sshd_config.bak"
 
 # set log level
 if [ "$SSH_LOG_LEVEL_VERBOSE" -eq 1 ]; then
@@ -269,6 +273,8 @@ fi
 if [ "$SSH_MAX_SESSIONS" -gt 0 ] && [ "$SSH_MAX_SESSIONS" -le 4 ]; then
     apply "MaxSessions" "$SSH_MAX_SESSIONS"
 fi
+
+echo "finished applying fixes, restarting ssh daemon\n"
 
 systemctl restart ssh
 

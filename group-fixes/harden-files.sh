@@ -22,8 +22,8 @@ LOCAL_LOGIN_BANNER_PERM=1
 
 REMOTE_LOGIN_BANNER_PERM=1
 
-GDM_LOGIN_BANNER_CONFIG=1
-GDM_LOGIN_BANNER_TXT=""
+GDM3_LOGIN_BANNER_CONFIG=1
+GDM3_LOGIN_BANNER_TXT=""
 
 HOSTS_ALLOW_PERM=1
 
@@ -66,20 +66,20 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-isHardened() {
-    local target_perm="$1"
-    local file="$2"
-    local target_own="$3"
-    local cur_filestat=$(stat -Lc "%a %A %u %U %g %G" "$file")
-    
-    if [[ $cur_filestat =~ $target_perm ]] && [[ $cur_filestat =~ $target_own ]]; then
-        return 1
-    fi
-
-    return 0
-}
-
 harden() {
+    isHardened() {
+        local target_perm="$1"
+        local file="$2"
+        local target_own="$3"
+        local cur_filestat="$(stat -Lc "%a %A %u %U %g %G" "$file")"
+        
+        if [[ $cur_filestat =~ $target_perm ]] && [[ $cur_filestat =~ $target_own ]]; then
+            return 1
+        fi
+
+        return 0
+    }
+
     local harden_file="$1"
     local chown_opt="$2"
     local chmod_opt="$3"
@@ -87,7 +87,7 @@ harden() {
     local target_owner="$5"
 
     if [ ! -e "$harden_file" ]; then
-        echo "$harden_file does not exist, will be skipped"
+        echo -e "$harden_file does not exist, will be skipped\n"
         return 1
     fi
 
@@ -95,8 +95,8 @@ harden() {
     local cur_file_perm=$?
 
     if [ $cur_file_perm -eq 1 ]; then
-        echo "$harden_file already hardened"
-        return 1
+        echo -e "$harden_file already hardened\n"
+        return 2
     fi
 
     echo "changing perms of $harden_file"
@@ -107,14 +107,14 @@ harden() {
     local cur_file_perm=$?
 
     if [ $cur_file_perm -eq 1 ]; then
-        echo "$harden_file file permissions changed successfully"
+        echo -e "$harden_file file permissions changed successfully\n"
         LOG+="HARDENED $harden_file\n"
         return 0
     fi
 
-    echo "$harden_file file permissions change failed"
+    echo -e "$harden_file file permissions change failed\n"
     LOG+="FAILED to harden $harden_file\n"
-    return 2
+    return 3
 }
 
 
@@ -146,10 +146,10 @@ harden_config() {
     isSafeConfig=$?
 
     if [ $isSafeConfig -eq 0 ]; then
-        echo "$config_name configuration hardened"
+        echo -e "$config_name configuration hardened\n"
         LOG+="$config_name configuration hardening SUCCESSFUL\n"
     else
-        echo "$config_name configuration is NOT hardened"
+        echo -e "$config_name configuration is NOT hardened\n"
         LOG+="$config_name configuration hardening FAILED\n"
     fi
 }
@@ -198,6 +198,31 @@ if [ "$BOOTLOADER_PERM" -eq 1 ]; then
     harden /boot/grub/grub.cfg "root:root" "og-rwx" 400 "0 root 0 root"
 fi
 
+# bootloader password
+if [ "$BOOTLOADER_PSSWD" -eq 1 ]; then
+    echo "you must choose a password in this next section, please choose your password wisely"
+
+    if [ -f /boot/grub2/grub2.cfg ]; then
+        if command -v grub2-setpassword &> /dev/null; then
+            echo "using grub2-setpassword to set password"
+            grub2-setpassword
+            LOG+="grub2-setpassword RAN"
+        else
+            echo "grub2-setpassword doesn't exist, you can specify the password in the configuration files"
+            LOG+="grub2-setpassword FAILED"
+        fi
+    else
+        if command -v grub-crypt &> /dev/null; then
+            echo "using grub-crypt to set password"
+            grub-crypt | psswd_hash="password $(sed -n '3p')" | echo $psswd_hash
+            LOG+="grub-crypt RAN"
+        else
+            echo "grub-crypt doesn't exist, you can specify the password in the configuration files"
+            LOG+="grub-crypt FAILED"
+        fi
+    fi
+fi
+
 # motd harden
 if [ "$MOTD_CONFIG" -eq 1 ] && [ -f /etc/motd ]; then
     harden_config "$MOTD_CONFIG_TXT" /etc/motd "motd (/etc/motd)"
@@ -235,6 +260,31 @@ if [ "$REMOTE_LOGIN_BANNER_PERM" -eq 1 ]; then
 fi
 
 # not done gdm banner
+if [ "$GDM_LOGIN_BANNER" -eq 1 ]; then
+    gdm_banner_configured=$(grep -qzo -zo "\[org\/gnome\/login-screen\]\nbanner-message-enable=true\nbanner-message-text='.*'")
+    if [ -f /etc/gdm3/greeter.dconf-defaults ] && [ "$gdm_banner_configured" -eq 0 ]; then
+        echo "gdm3 configuration already contains banner"
+    fi
+
+    if [ ! -f /etc/gdm3/greeter.dconf-defaults ]; then
+        echo "creating /etc/gdm3/greeter.dconf-defaults"
+        touch /etc/gdm3/greeter.dconf-defaults
+        echo -e "[org/gnome/login-screen]\nbanner-message-enable=true\nbanner-message-text='$GDM_LOGIN_BANNER_TXT'" >> /etc/gdm3/greeter.dconf-defaults
+        echo "added banner information to /etc/gdm3/greeter.dconf-defaults"
+    else
+        echo -e "[org/gnome/login-screen]\nbanner-message-enable=true\nbanner-message-text='$GDM_LOGIN_BANNER_TXT'" >> /etc/gdm3/greeter.dconf-defaults
+        echo "added banner information to /etc/gdm3/greeter.dconf-defaults"
+    fi
+
+    gdm_banner_configured=$(grep -qzo -zo "\[org\/gnome\/login-screen\]\nbanner-message-enable=true\nbanner-message-text='.*'")
+    if [ -f /etc/gdm3/greeter.dconf-defaults ] && [ "$gdm_banner_configured" -eq 0 ]; then
+        echo "gdm3 configured to have banner"
+        LOG+="gdm3 configuration SUCCESS"
+    else
+        echo "gdm3 configuration to have banner failed"
+        LOG+="gdm3 configuration FAILED"
+    fi
+fi
 # gdm banner
 
 # hosts.allow perm
@@ -256,10 +306,10 @@ if [ "$HOSTS_DENY_CONFIG" -eq 1 ]; then
         echo "ALL:ALL" >> /etc/hosts.deny
 
         if cat /etc/hosts.deny | grep -qE "^ALL:ALL$"; then
-            echo "successfully configured /etc/hosts.deny"
+            echo -e "successfully configured /etc/hosts.deny\n"
             LOG+="/etc/hosts.deny configuration SUCCESS\n"
         else
-            echo "failed to configure /etc/hosts.deny"
+            echo -e "failed to configure /etc/hosts.deny\n"
             LOG+="/etc/hosts.deny configuration FAILED\n"
         fi
     fi
@@ -302,7 +352,7 @@ fi
 
 # shadow file perm
 if [ "$SHADOW_FILE_PERM" -eq 1 ]; then
-    harden /etc/shadow "root:root" "o-rwx,g-rw" "640|600|500|400|0" "0 root 0 root"
+    harden /etc/shadow "root:root" "o-rwx,g-wx" "640|600|500|400|0" "0 root 0 root"
 fi
 
 # passwd perm
@@ -331,8 +381,42 @@ fi
 
 # creation of cron.allow and at.allow, removal of cron.deny and at.deny
 if [ "$AT_CRON_PERM" -eq 1 ]; then
-    isHardened 
-    if [ ! -f /etc/cron.deny ] && [ ! -f /etc/at.deny ] && 
+        harden /etc/at.allow "root:root" "og-rwx" 600 "0 root 0 root"
+        at_allow_ret=$?
+        harden /etc/cron.allow "root:root" "og-rwx" 600 "0 root 0 root"
+        cron_allow_ret=$?
+
+        if [ "$at_allow_ret" -eq 1 ];
+            echo "creating /etc/at.allow"
+            touch /etc/at.allow
+            harden /etc/at.allow "root:root" "og-rwx" 600 "0 root 0 root"
+            at_allow_ret=$?
+        fi
+
+        if [ "$cron_allow_ret" -eq 1 ];
+            echo "creating /etc/cron.allow"
+            touch /etc/cron.allow
+            harden /etc/cron.allow "root:root" "og-rwx" 600 "0 root 0 root"
+            cron_allow_ret=$?
+        fi
+        
+        if [ -f /etc/at.deny ]; then
+            echo "removing /etc/at.deny"
+            rm -rf /etc/at.deny
+        fi
+        
+        if [ -f /etc/cron.deny ]; then
+            echo "removing /etc/cron.deny"
+            rm -rf /etc/cron.deny
+        fi
+
+        if [ ! -f /etc/at.deny ] && [ ! -f /etc/cron.deny ] && [ "$cron_allow_ret" -eq 0 ] && [ "$at_allow_ret" -eq 0 ]; then
+            echo -e "successfully purged /etc/at.deny and /etc/cron.deny, and hardened (maybe created) /etc/cron.allow and /etc/at.allow\n"
+            LOG+="rm /etc/at.deny, /etc/cron.deny AND create /etc/at.allow, /etc/cron.allow SUCCESS\n"
+        else
+            echo -e "failed to either purge /etc/at.deny and /etc/cron.deny, or failed to harden (or created) /etc/cron.allow and /etc/at.allow (or that both operations have failed)\n"
+            LOG+="rm /etc/at.deny, /etc/cron.deny AND create /etc/at.allow, /etc/cron.allow FAILED\n"
+        fi
 fi
 
 # cron.d directory perm

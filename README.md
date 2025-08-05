@@ -1,5 +1,7 @@
 # `linux-cis-compliance`
 
+Developed by Ivan Ng in coordination with Hundred Plus Global Co. Ltd.
+
 171 - 29 = 142/190
 
 ## Description

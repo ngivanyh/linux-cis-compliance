@@ -1,7 +1,7 @@
 # hardens files of important purpose to make sure whoever's doing things to it is legit, mostly changing file perms to only root
 
 # LOG variable, for the log
-LOG=""
+LOG="LOG:\n"
 
 # config 1 = yes (to changes soon applied) 0 = no
 BOOTLOADER_PERM=1
@@ -108,12 +108,12 @@ harden() {
 
     if [ $cur_file_perm -eq 1 ]; then
         echo "$harden_file file permissions changed successfully"
-        LOG+="HARDENED $harden_file"
+        LOG+="HARDENED $harden_file\n"
         return 0
     fi
 
-    echo "$harden_file file permissions change failed to change to $filestat"
-    LOG+="FAILED to harden $harden_file with file permissions $filestat"
+    echo "$harden_file file permissions change failed"
+    LOG+="FAILED to harden $harden_file\n"
     return 2
 }
 
@@ -147,10 +147,10 @@ harden_config() {
 
     if [ $isSafeConfig -eq 0 ]; then
         echo "$config_name configuration hardened"
-        LOG+="$config_name configuration hardening SUCCESSFUL"
+        LOG+="$config_name configuration hardening SUCCESSFUL\n"
     else
         echo "$config_name configuration is NOT hardened"
-        LOG+="$config_name configuration hardening FAILED"
+        LOG+="$config_name configuration hardening FAILED\n"
     fi
 }
 
@@ -246,7 +246,7 @@ fi
 if [ "$HOSTS_DENY_CONFIG" -eq 1 ]; then
     if [ ! -f /etc/hosts.deny ]; then
         echo "this operation will create a /etc/hosts.deny file"
-        LOG+="CREATED /etc/hosts.deny"
+        LOG+="CREATED /etc/hosts.deny\n"
     fi
 
     if cat /etc/hosts.deny | grep -qE "^ALL:ALL$"; then
@@ -257,10 +257,10 @@ if [ "$HOSTS_DENY_CONFIG" -eq 1 ]; then
 
         if cat /etc/hosts.deny | grep -qE "^ALL:ALL$"; then
             echo "successfully configured /etc/hosts.deny"
-            LOG+="/etc/hosts.deny configuration SUCCESS"
+            LOG+="/etc/hosts.deny configuration SUCCESS\n"
         else
             echo "failed to configure /etc/hosts.deny"
-            LOG+="/etc/hosts.deny configuration FAILED"
+            LOG+="/etc/hosts.deny configuration FAILED\n"
         fi
     fi
 fi
@@ -331,7 +331,8 @@ fi
 
 # creation of cron.allow and at.allow, removal of cron.deny and at.deny
 if [ "$AT_CRON_PERM" -eq 1 ]; then
-    # to be finished
+    isHardened 
+    if [ ! -f /etc/cron.deny ] && [ ! -f /etc/at.deny ] && 
 fi
 
 # cron.d directory perm
@@ -363,3 +364,7 @@ fi
 if [ "$CRONTAB_PERM" -eq 1 ]; then
     harden /etc/crontab "root:root" "og-rwx" 600 "0 root 0 root"
 fi
+
+echo "finished applying fixes"
+
+echo "$LOG"

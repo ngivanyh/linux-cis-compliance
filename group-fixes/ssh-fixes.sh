@@ -1,7 +1,7 @@
 # configures ssh to be more secure
 
 # log variable, stores changes
-LOG=""
+LOG="LOG:\n"
 
 # config, 1 = yes (to the security fixes) / 0 = no (keep it the way it was)
 SSH_LOG_LEVEL_VERBOSE=1
@@ -78,11 +78,11 @@ check_ssh_install() {
 check_sshd_conf() {
     sshd_conf_path="/etc/ssh/sshd_config"
     if [ ! -f "$sshd_conf_path" ] || [ ! -w "$sshd_conf_path" ]; then
-        echo "$sshd_conf_path nonexistent or cannot be written to\n"
+        echo -e "$sshd_conf_path nonexistent or cannot be written to\n"
         return 1
     fi
 
-    echo "$sshd_conf_path exists and is writable\n"
+    echo -e "$sshd_conf_path exists and is writable\n"
     return 0
 }
 
@@ -129,7 +129,7 @@ apply() {
 
     # check if setting already exists
     if cat /etc/ssh/sshd_config | grep -qE "^[[:space:]]*$full_setting$"; then
-        echo "\"$full_setting\" fix already applied, unchanged\n"
+        echo "\"$full_setting\" fix already applied, unchanged"
         return 1
     fi
 
@@ -144,13 +144,13 @@ apply() {
     fi
 
     # check if applied
-    if sshd -T | grep -qE "$full_setting"; then
-        echo "$full_setting successfully applied\n"
+    if sshd -T | grep -qEi "$full_setting"; then
+        echo -e "$full_setting successfully applied\n"
         LOG+="$full_setting SUCCESS\n"
         return 0
     fi
 
-    echo "$full_setting application unsuccessful\n"
+    echo "$full_setting application unsuccessful"
     LOG+="$full_setting FAIL\n"
     return 2
 }
@@ -165,15 +165,13 @@ if [ "$ssh_installed" -ne 0 ] || [ "$sshd_conf_exists" -ne 0 ]; then
     exit 2
 fi
 
-echo "checks are successful, proceeding with patching\n"
+echo -e "checks are successful, proceeding with patching\n"
 print_settings
 echo
 
 cp /etc/ssh/sshd_config .
 mv ./sshd_config ./sshd_config.bak
-echo -n "copied original sshd_config file to "
-pwd
-echo "under the name of sshd_config.bak"
+echo -e "copied original sshd_config file to $(pwd) under the name of sshd_config.bak\n"
 
 # set log level
 if [ "$SSH_LOG_LEVEL_VERBOSE" -eq 1 ]; then
@@ -274,8 +272,8 @@ if [ "$SSH_MAX_SESSIONS" -gt 0 ] && [ "$SSH_MAX_SESSIONS" -le 4 ]; then
     apply "MaxSessions" "$SSH_MAX_SESSIONS"
 fi
 
-echo "finished applying fixes, restarting ssh daemon\n"
+echo -e "finished applying fixes, restarting ssh daemon\n"
 
 systemctl restart sshd
 
-echo "$LOG"
+echo -e "$LOG"

@@ -66,20 +66,20 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
+isHardened() {
+    local target_perm="$1"
+    local file="$2"
+    local target_own="$3"
+    local cur_filestat=$(stat -Lc "%a %A %u %U %g %G" "$file")
+    
+    if [[ $cur_filestat =~ $target_perm ]] && [[ $cur_filestat =~ $target_own ]]; then
+        return 1
+    fi
+
+    return 0
+}
+
 harden() {
-    isHardened() {
-        local target_perm="$1"
-        local file="$2"
-        local target_own="$3"
-        local cur_filestat=$(stat -Lc "%a %A %u %U %g %G" "$file")
-        
-        if [[ $cur_filestat =~ $target_perm ]] && [[ $cur_filestat =~ $target_own ]]; then
-            return 1
-        fi
-
-        return 0
-    }
-
     local harden_file="$1"
     local chown_opt="$2"
     local chmod_opt="$3"
@@ -271,7 +271,7 @@ if [ "$HOSTS_DENY_PERM" -eq 1 ]; then
 fi
 
 # gshadow- file perm
-if [ $GSHADOW_DASH_FILE_PERM -eq 1 ]; then
+if [ "$GSHADOW_DASH_FILE_PERM" -eq 1 ]; then
     harden /etc/gshadow- "root:root" "o-rwx,g-rw" "640|600|500|400|0" "0 root 0 root"
 fi
 
@@ -281,17 +281,17 @@ if [ "$GROUP_DASH_FILE_PERM" -eq 1 ]; then
 fi
 
 # shadow- file perm
-if [ $SHADOW_DASH_FILE_PERM -eq 1 ]; then
+if [ "$SHADOW_DASH_FILE_PERM" -eq 1 ]; then
     harden /etc/shadow- "root:root" "o-rwx,g-rw" "640|600|500|400|0" "0 root 0 root"
 fi
 
 # passwd- file perm
-if [ $PSSWD_DASH_FILE_PERM -eq 1 ]; then
+if [ "$PSSWD_DASH_FILE_PERM" -eq 1 ]; then
     harden /etc/passwd- "root:root" "u-x,go-rwx" "600|500|400|0 " "0 root 0 root"
 fi
 
 # gshadow file perm
-if [ $GSHADOW_FILE_PERM -eq 1 ]; then
+if [ "$GSHADOW_FILE_PERM" -eq 1 ]; then
     harden /etc/gshadow "root:root" "o-rwx,g-rw" "640|600|500|400|0" "0 root 0 root"
 fi
 
@@ -301,11 +301,65 @@ if [ "$GROUP_FILE_PERM" -eq 1 ]; then
 fi
 
 # shadow file perm
-if [ $SHADOW_FILE_PERM -eq 1 ]; then
+if [ "$SHADOW_FILE_PERM" -eq 1 ]; then
     harden /etc/shadow "root:root" "o-rwx,g-rw" "640|600|500|400|0" "0 root 0 root"
 fi
 
 # passwd perm
 if [ "$PSSWD_FILE_PERM" -eq 1 ]; then
     harden /etc/passwd "root:root" 644 644 "0 root 0 root"
+fi
+
+# ssh public host keys perm
+if [ "$SSH_PUBLIC_HOST_PERM" -eq 1 ]; then
+    for f in /etc/ssh/ssh_host_*_key.pub; do
+        harden "$f" "root:root" 644 644 "0 root 0 root"
+    done
+fi
+
+# ssh private key perm
+if [ "$SSH_PRIVATE_HOST_PERM" -eq 1 ]; then
+    for f in /etc/ssh/ssh_host_*_key; do
+        harden "$f" "root:root" 600 600 "0 root 0 root"
+    done
+fi
+
+# sshd config perm
+if [ "$SSHD_CONFIG_PERM" -eq 1 ]; then
+    harden /etc/ssh/sshd_config "root:root" "og-rwx" 600 "0 root 0 root"
+fi
+
+# creation of cron.allow and at.allow, removal of cron.deny and at.deny
+if [ "$AT_CRON_PERM" -eq 1 ]; then
+    # to be finished
+fi
+
+# cron.d directory perm
+if [ "$CRON_D_PERM" -eq 1 ]; then
+    harden /etc/cron.d "root:root" "og-rwx" 700 "0 root 0 root"
+fi
+
+# cron monthly perm
+if [ "$CRON_MONTHLY_PERM" -eq 1 ]; then
+    harden /etc/cron.monthly "root:root" "og-rwx" 700 "0 root 0 root"
+fi
+
+# cron weekly perm
+if [ "$CRON_WEEKLY_PERM" -eq 1 ]; then
+    harden /etc/cron.weekly "root:root" "og-rwx" 700 "0 root 0 root"
+fi
+
+# cron daily perm
+if [ "$CRON_DAILY_PERM" -eq 1 ]; then
+    harden /etc/cron.daily "root:root" "og-rwx" 700 "0 root 0 root"
+fi
+
+# cron hourly perm
+if [ "$CRON_HOURLY_PERM" -eq 1 ]; then
+    harden /etc/cron.hourly "root:root" "og-rwx" 700 "0 root 0 root"
+fi
+
+# crontab perm
+if [ "$CRONTAB_PERM" -eq 1 ]; then
+    harden /etc/crontab "root:root" "og-rwx" 600 "0 root 0 root"
 fi

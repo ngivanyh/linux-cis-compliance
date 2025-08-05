@@ -128,7 +128,7 @@ apply() {
     sed -i -E "/^#+[[:space:]]*$setting.*$/Id" /etc/ssh/sshd_config
 
     # check if setting already exists
-    if cat /etc/ssh/sshd_config | grep -qE "^$full_setting$"; then
+    if cat /etc/ssh/sshd_config | grep -qE "^[[:space:]]*$full_setting$"; then
         echo "\"$full_setting\" fix already applied, unchanged\n"
         return 1
     fi
@@ -148,11 +148,11 @@ apply() {
         echo "$full_setting successfully applied\n"
         LOG+="$full_setting SUCCESS\n"
         return 0
-    else
-        echo "$full_setting application unsuccessful\n"
-        LOG+="$full_setting FAIL\n"
-        return 2
     fi
+
+    echo "$full_setting application unsuccessful\n"
+    LOG+="$full_setting FAIL\n"
+    return 2
 }
 
 check_ssh_install
@@ -276,6 +276,6 @@ fi
 
 echo "finished applying fixes, restarting ssh daemon\n"
 
-systemctl restart ssh
+systemctl restart sshd
 
 echo "$LOG"

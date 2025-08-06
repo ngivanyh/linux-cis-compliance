@@ -133,6 +133,9 @@ harden_config() {
     local config_filepath="$2"
     local config_name="$3"
 
+    cp "$config_filepath" "$(basename "$config_filepath").bak"
+    echo -e "copied original sshd_config file to $(pwd) under the name of $(basename "$config_filepath").bak\n"
+
     echo "checking new config string of $config_str"
     check_config_str "$config_str"
     isSafeConfig=$?
@@ -206,19 +209,21 @@ if [ "$BOOTLOADER_PSSWD" -eq 1 ]; then
         if command -v grub2-setpassword &> /dev/null; then
             echo "using grub2-setpassword to set password"
             grub2-setpassword
-            LOG+="grub2-setpassword RAN"
+            echo
+            LOG+="grub2-setpassword RAN\n"
         else
-            echo "grub2-setpassword doesn't exist, you can specify the password in the configuration files"
-            LOG+="grub2-setpassword FAILED"
+            echo "grub2-setpassword doesn't exist, you can specify the password in the configuration files\n"
+            LOG+="grub2-setpassword FAILED\n"
         fi
     else
         if command -v grub-crypt &> /dev/null; then
             echo "using grub-crypt to set password"
-            grub-crypt | psswd_hash="password $(sed -n '3p')" | echo $psswd_hash
-            LOG+="grub-crypt RAN"
+            grub-crypt | psswd_hash="password $(sed -n '3p')" | echo $psswd_hash >> /boot/grub/menu.lst
+            echo
+            LOG+="grub-crypt RAN\n"
         else
-            echo "grub-crypt doesn't exist, you can specify the password in the configuration files"
-            LOG+="grub-crypt FAILED"
+            echo "grub-crypt doesn't exist, you can specify the password in the configuration files\n"
+            LOG+="grub-crypt FAILED\n"
         fi
     fi
 fi
@@ -227,21 +232,21 @@ fi
 if [ "$MOTD_CONFIG" -eq 1 ] && [ -f /etc/motd ]; then
     harden_config "$MOTD_CONFIG_TXT" /etc/motd "motd (/etc/motd)"
 elif [ "$MOTD_CONFIG" -eq 1 ] && [ ! -f /etc/motd ]; then
-    echo "/etc/motd nonexistent"
+    echo "/etc/motd nonexistent\n"
 fi
 
 # /etc/issue (local login banner) harden
 if [ "$LOCAL_LOGIN_BANNER_CONFIG" -eq 1 ] && [ -f /etc/issue ]; then
     harden_config "$LOCAL_LOGIN_BANNER_TXT" /etc/issue "local login banner (/etc/issue)"
 elif [ "$LOCAL_LOGIN_BANNER_CONFIG" -eq 1 ] && [ ! -f /etc/issue ]; then
-    echo "/etc/issue nonexistent"
+    echo "/etc/issue nonexistent\n"
 fi
 
 # /etc/issue.net (local login banner) harden
 if [ "$REMOTE_LOGIN_BANNER_CONFIG" -eq 1 ] && [ -f /etc/issue.net ]; then
     harden_config "$REMOTE_LOGIN_BANNER_TXT" /etc/issue.net "remote login banner (/etc/issue.net)"
 elif [ "$LOCAL_LOGIN_BANNER_CONFIG" -eq 1 ] && [ ! -f /etc/issue ]; then
-    echo "/etc/issue.net nonexistent"
+    echo "/etc/issue.net nonexistent\n"
 fi
 
 # motd perm
@@ -261,7 +266,7 @@ fi
 
 # not done gdm banner
 if [ "$GDM_LOGIN_BANNER" -eq 1 ]; then
-    gdm_banner_configured=$(grep -qzo -zo "\[org\/gnome\/login-screen\]\nbanner-message-enable=true\nbanner-message-text='.*'")
+    gdm_banner_configured=$(grep -zo "\[org\/gnome\/login-screen\]\nbanner-message-enable=true\nbanner-message-text='.*'")
     if [ -f /etc/gdm3/greeter.dconf-defaults ] && [ "$gdm_banner_configured" -eq 0 ]; then
         echo "gdm3 configuration already contains banner"
     fi
@@ -278,11 +283,11 @@ if [ "$GDM_LOGIN_BANNER" -eq 1 ]; then
 
     gdm_banner_configured=$(grep -qzo -zo "\[org\/gnome\/login-screen\]\nbanner-message-enable=true\nbanner-message-text='.*'")
     if [ -f /etc/gdm3/greeter.dconf-defaults ] && [ "$gdm_banner_configured" -eq 0 ]; then
-        echo "gdm3 configured to have banner"
-        LOG+="gdm3 configuration SUCCESS"
+        echo "gdm3 configured to have banner\n"
+        LOG+="gdm3 configuration SUCCESS\n"
     else
-        echo "gdm3 configuration to have banner failed"
-        LOG+="gdm3 configuration FAILED"
+        echo "gdm3 configuration to have banner failed\n"
+        LOG+="gdm3 configuration FAILED\n"
     fi
 fi
 # gdm banner
@@ -449,6 +454,6 @@ if [ "$CRONTAB_PERM" -eq 1 ]; then
     harden /etc/crontab "root:root" "og-rwx" 600 "0 root 0 root"
 fi
 
-echo "finished applying fixes"
+echo -e "finished applying fixes\n"
 
 echo "$LOG"

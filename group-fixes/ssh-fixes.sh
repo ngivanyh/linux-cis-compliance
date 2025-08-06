@@ -169,8 +169,7 @@ echo -e "checks are successful, proceeding with patching\n"
 print_settings
 echo
 
-cp /etc/ssh/sshd_config .
-mv ./sshd_config ./sshd_config.bak
+cp /etc/ssh/sshd_config ./sshd_config.bak
 echo -e "copied original sshd_config file to $(pwd) under the name of sshd_config.bak\n"
 
 # set log level

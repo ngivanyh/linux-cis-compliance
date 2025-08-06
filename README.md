@@ -1,13 +1,11 @@
 # `linux-cis-compliance`
 
-Developed by Ivan Ng in coordination with Hundred Plus Global Co. Ltd.
+Developed by Ivan Ng in coordination with Hundred Plus Global Ltd.
 
-171 - 29 = 142/190
+142 - 17 = 125
 
 ## Description
-Scripts that ensure CIS compliance (for linux, on the distro independent benchmark v2.0.0). Please check thoroughly, and run with root permissions to apply changes successfully.
+Scripts that ensure CIS compliance (for linux, on the distribution independent benchmark v2.0.0). Please check thoroughly, and run with root permissions to apply changes successfully. This project is WIP, and there may be bugs in the scripts, do this at your own caution.
 
 ## Usage
-To fix issues one by one, use `single-scripts`, note that `single-scripts` are ordered by the CIS ID, and is no longer being worked on, it is recommended to NOT use them.
-
-The recommended way to use this project is to use the fixes in the `group-fixes`.
+Open and run the scripts in `group-fixes`, `single-fixes` will be removed at a later date and is not complete nor is working.

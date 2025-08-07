@@ -169,7 +169,7 @@ print_settings() {
   echo "MOTD_PERM: $MOTD_PERM"
   echo "LOCAL_LOGIN_BANNER_PERM: $LOCAL_LOGIN_BANNER_PERM"
   echo "REMOTE_LOGIN_BANNER_PERM: $REMOTE_LOGIN_BANNER_PERM"
-  echo "GDM_LOGIN_BANNER_PERM: $GDM_LOGIN_BANNER_PERM"
+  echo "GDM3_LOGIN_BANNER_PERM: $GDM3_LOGIN_BANNER_PERM"
   echo "HOSTS_ALLOW_PERM: $HOSTS_ALLOW_PERM"
   echo "HOSTS_DENY_CONFIG: $HOSTS_DENY_CONFIG"
   echo "HOSTS_DENY_PERM: $HOSTS_DENY_PERM"
@@ -265,7 +265,7 @@ if [ "$REMOTE_LOGIN_BANNER_PERM" -eq 1 ]; then
 fi
 
 # not done gdm banner
-if [ "$GDM_LOGIN_BANNER" -eq 1 ]; then
+if [ "$GDM3_LOGIN_BANNER" -eq 1 ]; then
     gdm_banner_configured=$(grep -zo "\[org\/gnome\/login-screen\]\nbanner-message-enable=true\nbanner-message-text='.*'")
     if [ -f /etc/gdm3/greeter.dconf-defaults ] && [ "$gdm_banner_configured" -eq 0 ]; then
         echo "gdm3 configuration already contains banner"
@@ -274,10 +274,10 @@ if [ "$GDM_LOGIN_BANNER" -eq 1 ]; then
     if [ ! -f /etc/gdm3/greeter.dconf-defaults ]; then
         echo "creating /etc/gdm3/greeter.dconf-defaults"
         touch /etc/gdm3/greeter.dconf-defaults
-        echo -e "[org/gnome/login-screen]\nbanner-message-enable=true\nbanner-message-text='$GDM_LOGIN_BANNER_TXT'" >> /etc/gdm3/greeter.dconf-defaults
+        echo -e "[org/gnome/login-screen]\nbanner-message-enable=true\nbanner-message-text='$GDM3_LOGIN_BANNER_TXT'" >> /etc/gdm3/greeter.dconf-defaults
         echo "added banner information to /etc/gdm3/greeter.dconf-defaults"
     else
-        echo -e "[org/gnome/login-screen]\nbanner-message-enable=true\nbanner-message-text='$GDM_LOGIN_BANNER_TXT'" >> /etc/gdm3/greeter.dconf-defaults
+        echo -e "[org/gnome/login-screen]\nbanner-message-enable=true\nbanner-message-text='$GDM3_LOGIN_BANNER_TXT'" >> /etc/gdm3/greeter.dconf-defaults
         echo "added banner information to /etc/gdm3/greeter.dconf-defaults"
     fi
 
@@ -391,14 +391,14 @@ if [ "$AT_CRON_PERM" -eq 1 ]; then
         harden /etc/cron.allow "root:root" "og-rwx" 600 "0 root 0 root"
         cron_allow_ret=$?
 
-        if [ "$at_allow_ret" -eq 1 ];
+        if [ "$at_allow_ret" -eq 1 ]; then
             echo "creating /etc/at.allow"
             touch /etc/at.allow
             harden /etc/at.allow "root:root" "og-rwx" 600 "0 root 0 root"
             at_allow_ret=$?
         fi
 
-        if [ "$cron_allow_ret" -eq 1 ];
+        if [ "$cron_allow_ret" -eq 1 ]; then
             echo "creating /etc/cron.allow"
             touch /etc/cron.allow
             harden /etc/cron.allow "root:root" "og-rwx" 600 "0 root 0 root"

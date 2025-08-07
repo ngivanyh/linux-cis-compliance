@@ -2,6 +2,7 @@
 
 # log variable, stores changes
 LOG="LOG:\n"
+sshd_config=/etc/ssh/sshd_config
 
 # config, 1 = yes (to the security fixes) / 0 = no (keep it the way it was)
 SSH_LOG_LEVEL_VERBOSE=1
@@ -76,13 +77,12 @@ check_ssh_install() {
 }
 
 check_sshd_conf() {
-    sshd_conf_path="/etc/ssh/sshd_config"
-    if [ ! -f "$sshd_conf_path" ] || [ ! -w "$sshd_conf_path" ]; then
+    if [ ! -f "$sshd_config" ] || [ ! -w "$sshd_config" ]; then
         echo -e "$sshd_conf_path nonexistent or cannot be written to\n"
         return 1
     fi
 
-    echo -e "$sshd_conf_path exists and is writable\n"
+    echo -e "$sshd_config exists and is writable\n"
     return 0
 }
 
@@ -125,22 +125,22 @@ apply() {
     local full_setting="$setting $config_option"
 
     # remove all comments related to setting
-    sed -i -E "/^#+[[:space:]]*$setting.*$/Id" /etc/ssh/sshd_config
+    sed -i -E "/^#+[[:space:]]*$setting.*$/Id" "$sshd_config"
 
     # check if setting already exists
-    if cat /etc/ssh/sshd_config | grep -qE "^[[:space:]]*$full_setting$"; then
+    if cat "$sshd_config" | grep -qE "^[[:space:]]*$full_setting$"; then
         echo "\"$full_setting\" fix already applied, unchanged"
         return 1
     fi
 
     echo "applying $full_setting"
     # add setting
-    if cat /etc/ssh/sshd_config | grep -qEi "^[[:space:]]*$setting.*$"; then
+    if cat "$sshd_config" | grep -qEi "^[[:space:]]*$setting.*$"; then
         echo "overwriting previous setting"
-        sed -i -E "s/^[[:space:]]*$setting.*$/$full_setting/I" /etc/ssh/sshd_config
+        sed -i -E "s/^[[:space:]]*$setting.*$/$full_setting/I" "$sshd_config"
     else
         echo "adding new setting"
-        echo "$full_setting" >> /etc/ssh/sshd_config
+        echo "$full_setting" >> "$sshd_config"
     fi
 
     # check if applied
@@ -169,7 +169,7 @@ echo -e "checks are successful, proceeding with patching\n"
 print_settings
 echo
 
-cp /etc/ssh/sshd_config ./sshd_config.bak
+cp "$sshd_config"./sshd_config.bak
 echo -e "copied original sshd_config file to $(pwd) under the name of sshd_config.bak\n"
 
 # set log level

@@ -137,6 +137,9 @@ sysctl_conf() {
     return 0
 }
 
+cp /etc/sysctl.conf ./sysctl.conf.bak
+echo -e "copied original sysctl.conf file to $(pwd) under the name of sysctl.conf.bak\n"
+
 # disable ip forward
 if [ "$IP_FORWARD_DISABLE" -eq 1 ]; then
     sysctl_conf "net.ipv4.ip_forward=0 net.ipv6.conf.all.forwarding=0 " "ipv4 ipv6" "disable_ip_forward"

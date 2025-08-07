@@ -1,8 +1,8 @@
 # `linux-cis-compliance`
 
-Developed by Ivan Ng in coordination with Hundred Plus Global Ltd.
+Developed by Ivan Ng (`ngivanyh`) in coordination with Hundred Plus Global Ltd.
 
-Fixes left: 142 - 17 = 125
+Fixes left: 125 - 16 = 109
 
 ## Description
 Scripts that ensure CIS compliance on Linux according to the CIS Linux Distribution Independent benchmark v2.0.0. **Note that this project is still work in progress**, these scripts have not been tested thoroughly yet. Feel free to use these scripts, but beware of the risks posed to the system. You were warned. A spec of this CIS Linux Distribution Independent benchmark v2.0.0 can be found [here](https://github.com/skylens/CIS/blob/master/CIS_Distribution_Independent_Linux_Benchmark_v2.0.0.pdf).
@@ -16,7 +16,7 @@ Here is the roadmap for this project
 2. - [ ] Improve logging of the scripts to include colored output and separate functions for logging
 3. - [ ] Use `JSON` for configuration
 4. - [ ] Implement the system for translating the `JSON` into the `variable_name=value` for shell scripts.
-5. - [ ] Improve logic of the scripts to reduce repeated code
+5. - [ ] Improve logic of the scripts to reduce repeated code, general codefixes
 6. - [ ] Testing on a virtual machine to see if the desired fixes are applied
 
 ## Testing
@@ -25,5 +25,5 @@ Below is a table of the scripts that have been tested
 |--------|-------------|---------------------|
 | `ssh-fixes.sh` | | |
 | `netconfig.sh` | | |
-| `harden-files.sh` | |
+| `harden-files.sh` | | |
 | `filesystem-harden.sh` | | |

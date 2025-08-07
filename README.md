@@ -1,11 +1,11 @@
 # `linux-cis-compliance`
 
-Developed by Ivan Ng (`ngivanyh`) in coordination with Hundred Plus Global Ltd.
+Developed by Ivan Ng ([`ngivanyh`](https://github.com/ngivanyh)) in coordination with Hundred Plus Global Ltd.
 
 Fixes left: 125 - 16 = 109
 
 ## Description
-Scripts that ensure CIS compliance on Linux according to the CIS Linux Distribution Independent benchmark v2.0.0. **Note that this project is still work in progress**, these scripts have not been tested thoroughly yet. Feel free to use these scripts, but beware of the risks posed to the system. You were warned. A spec of this CIS Linux Distribution Independent benchmark v2.0.0 can be found [here](https://github.com/skylens/CIS/blob/master/CIS_Distribution_Independent_Linux_Benchmark_v2.0.0.pdf).
+Scripts that ensure CIS compliance on Linux according to the CIS Linux Distribution Independent benchmark v2.0.0. **Note that this project is still a work in progress**, these scripts have not been tested thoroughly yet. Feel free to use these scripts, but beware of the risks posed to the system. You were warned. A spec of this CIS Linux Distribution Independent benchmark v2.0.0 can be found [here](https://github.com/skylens/CIS/blob/master/CIS_Distribution_Independent_Linux_Benchmark_v2.0.0.pdf).
 
 ## Usage
 Each script has their own descriptive filename which indicates the areas of the system that aforementioned script will harden. To customize, change the number values associated with the variable at the top level of the file. Most of them are simply switching the value from 1 and 0, but there are special variables which do not follow that rule, they should be annotated by the comments beside it.
@@ -27,3 +27,8 @@ Below is a table of the scripts that have been tested
 | `netconfig.sh` | | |
 | `harden-files.sh` | | |
 | `filesystem-harden.sh` | | |
+
+## Contribution
+Contribution in the form of [pull requests](https://github.com/ngivanyh/linux-cis-compliance/pulls), or submitting [issues](https://github.com/ngivanyh/linux-cis-compliance/issues) are welcome. If you are willing to contribute, please prioritize the completion of all the fixes (if your issue has something to do with that, kindly associate it with the ["Finish all fixes"](https://github.com/ngivanyh/linux-cis-compliance/milestone/1) milestone).
+
+## [License: MIT](https://github.com/ngivanyh/linux-cis-compliance/blob/main/LICENSE)

@@ -236,3 +236,5 @@ if [ "$PERIODICALLY_CHECK_FILESYSTEM" -eq 1 ] && [ "$aide_installed" -eq 1 ]; th
         echo "added cron job to /etc/crontab"
     fi
 fi
+
+echo -e "finished\n$LOG"
